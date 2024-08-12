@@ -1,12 +1,12 @@
 mod cmd;
 mod file;
 mod cmp;
-
 use std::fs;
+use std::time::Duration;
 use serde::{Serialize, Deserialize};
 use serde_json;
-use std::{io, process, thread};
-use std::time::Duration;
+use tokio;
+use tokio::time::{interval, Instant};
 use crate::file::{File};
 
 #[derive(Debug,Deserialize,Clone)]
@@ -14,25 +14,36 @@ struct config{
 path:String,
 temp_path:String
 }
-fn main() {
-    let handle = thread::spawn(|| {
-         //子线程比对文件是否一致,不一致就重新启动
+#[tokio::main]
+async fn main() {
+   tokio::spawn(async{
+        let mut interval = interval(Duration::from_secs(1800));
         let config= serde_json::from_str::<config>(&*fs::read_to_string("./src/config.json").unwrap()).unwrap();
          let mut f1=File::create_from(&config.path);
         loop{
-             thread::sleep(Duration::from_secs(4));
-             let f2=File::create_from(&config.path);
-            if  f1.is_modify(&f2){
-                //
-                println!("文件已修改")
-            }else{
-                println!("文件未修改")
-            }
-            f1=f2;
+            interval.tick().await;
+                 let f2=File::create_from(&config.path);
+                if  f1.is_modify(&f2){
+                    //
+                    println!("文件已修改")
+                }else{
+                    println!("文件未修改")
+                }
+                f1=f2;
         }
-
     });
-// //触发函数，等待相应
+    //第二个定时任务
+    tokio::spawn(async{
+        let mut interval = interval(Duration::from_secs(60*60*24));
+        let config= serde_json::from_str::<config>(&*fs::read_to_string("./src/config.json").unwrap()).unwrap();
+        let mut f1=File::create_from(&config.path);
+        loop{
+            interval.tick().await;
+            fs::write("./src/temp.f", serde_json::to_string(&f1).unwrap());
+        }
+    });
+
+    // //触发函数，等待相应
 //     let mut input=String::new();
 //     loop{
 //         input.clear();
