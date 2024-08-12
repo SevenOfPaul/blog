@@ -39,7 +39,7 @@ impl FileTree {
 impl<'a> File {
     //读取文件路径创建FT
     pub fn create_from(path: &str) -> File {
-        if let Ok(dir) = fs::metadata(path.clone()) {
+        if let Ok(dir) = fs::metadata(path) {
             if dir.is_dir() {
                 return File::DT(DirTree::new(String::from(path),dir.modified().unwrap(), File::add_tree(fs::read_dir(path).unwrap())));
             } else {
@@ -54,10 +54,10 @@ impl<'a> File {
     fn new(name: String, mod_time: SystemTime, children: Vec<File>) -> File {
         File::DT(DirTree { name, mod_time, children })
     }
-    fn read_file(path: String) -> File {
+    fn read_file(path: &str) -> File {
         let meta = fs::metadata(path.clone()).unwrap();
         if let Ok(file) = fs::read(path.clone()) {
-            return File::FT(FileTree::new(path, meta.modified().unwrap(), file));
+            return File::FT(FileTree::new(String::from(path), meta.modified().unwrap(), file));
         } else {
             println!("文件读取失败");
             process::exit(1)
@@ -86,7 +86,7 @@ impl<'a> File {
                     ans.push(Self::create_from(path_dir.to_str().unwrap()));
             } else {
                 //文件
-                ans.push(Self::read_file(String::from(path_dir.to_str().unwrap())));
+                ans.push(Self::read_file(path_dir.to_str().unwrap()));
             }
         }
         ans
