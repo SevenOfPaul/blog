@@ -55,8 +55,8 @@ impl<'a> File {
         File::DT(DirTree { name, mod_time, children })
     }
     fn read_file(path: &str) -> File {
-        let meta = fs::metadata(path.clone()).unwrap();
-        if let Ok(file) = fs::read(path.clone()) {
+        let meta = fs::metadata(path).unwrap();
+        if let Ok(file) = fs::read(path) {
             return File::FT(FileTree::new(String::from(path), meta.modified().unwrap(), file));
         } else {
             println!("文件读取失败");
