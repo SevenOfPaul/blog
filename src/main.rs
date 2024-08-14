@@ -2,10 +2,12 @@ mod cmd;
 mod file;
 mod cmp;
 use std::{fs, thread};
-use std::sync::{ Arc, Mutex};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 use serde_json;
+use crate::cmp::compress;
 use crate::file::{File};
 
 #[derive(Debug, Deserialize, Clone)]
@@ -14,7 +16,9 @@ struct config {
     temp_path: String,
 }
  fn main() {
-     let config = serde_json::from_str::<config>(&*fs::read_to_string("./src/config.json").unwrap()).unwrap();
+     let mut path=PathBuf::from(std::env::current_dir().unwrap());
+     path.push("/config.json");
+     let config = serde_json::from_str::<config>(&*fs::read_to_string(path).unwrap()).unwrap();
      let f1 =Arc::new( Mutex::new(File::create_from(&config.path)));
      let  mut f1Share=Arc::clone(&f1);
     thread::spawn(move|| {
@@ -42,7 +46,7 @@ struct config {
         loop {
             let mut f2S2=f2Share.lock().unwrap();
            if Instant::now() - start > Duration::from_secs(60 * 60 * 24){
-               fs::write(&config.temp_path, serde_json::to_string(&*f2S2).unwrap());
+               fs::write(&config.temp_path, compress(serde_json::to_string(&*f2S2).unwrap()).unwrap());
            }
             start=Instant::now();
             drop(f2S2)
