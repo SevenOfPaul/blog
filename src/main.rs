@@ -3,7 +3,7 @@ mod file;
 mod cmp;
 use std::{fs, thread};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 use serde_json;
@@ -20,21 +20,22 @@ struct config {
      let mut path=PathBuf::from(std::env::current_dir().unwrap());
      path.push("/config.json");
      let config = serde_json::from_str::<config>(&*fs::read_to_string(path).unwrap()).unwrap();
-     let f1 =Arc::new( Mutex::new(File::create_from(&config.path)));
+     let f1 =Arc::new(RwLock::new(File::create_from(&config.path)));
      let  mut f1Share=Arc::clone(&f1);
     thread::spawn(move|| {
         let mut start = Instant::now();
         loop {
-            let mut f1S1=f1Share.lock().unwrap();
+            let mut f1S1=f1Share.read().unwrap();
             if Instant::now() - start > Duration::from_secs(3) {
                 let f2 = File::create_from(&config.path);
                 if f1S1.is_modify(&f2) {
-                    println!("文件已修改");
+                  println!("文件已修改");
+                  let mut f2S1=f1Share.write().unwrap();
+                    *f2S1 =f2;
                     cmd::excu(&config.work_path,"npm",vec!["run","build"])
                 } else {
-                    println!("文件未修改");
+                 println!("文件未修改");
                 }
-                *f1S1 =f2;
             }
             start = Instant::now();
            drop(f1S1);
@@ -46,12 +47,12 @@ struct config {
         let mut start = Instant::now();
         let config = serde_json::from_str::<config>(&*fs::read_to_string("./src/config.json").unwrap()).unwrap();
         loop {
-            let mut f2S2=f2Share.lock().unwrap();
            if Instant::now() - start > Duration::from_secs(60 * 60 * 24){
+               let mut f2S2=f2Share.write().unwrap();
                fs::write(&config.temp_path, compress(serde_json::to_string(&*f2S2).unwrap()).unwrap());
+               drop(f2S2);
            }
             start=Instant::now();
-            drop(f2S2)
         }
     });
 
