@@ -1,4 +1,5 @@
 {
   "path": "D:/app",
-   "temp_path": "F:/blog-next/src/temp.f"
+   "temp_path": "F:/blog-next/src/temp/temp.file",
+     "work_path": "F:/blog-next"
 }
