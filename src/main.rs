@@ -14,6 +14,7 @@ use crate::file::{File};
 struct config {
     path: String,
     temp_path: String,
+    work_path:String
 }
  fn main() {
      let mut path=PathBuf::from(std::env::current_dir().unwrap());
@@ -29,6 +30,7 @@ struct config {
                 let f2 = File::create_from(&config.path);
                 if f1S1.is_modify(&f2) {
                     println!("文件已修改");
+                    cmd::excu(&config.work_path,"npm",vec!["run","build"])
                 } else {
                     println!("文件未修改");
                 }
